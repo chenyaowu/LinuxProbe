@@ -1081,3 +1081,98 @@ initial-setup-ks.cfg：文件名称
 
 ### 部署磁盘阵列 
 
+#### mdadm 命令
+
+- mdadm 命令用于管理 Linux 系统中的软件 RAID 硬盘阵列，格式为“mdadm [模式]  [选项] [成员设备名称]”。
+
+  | 参数 | 作用               |
+  | ---- | ------------------ |
+  | -a   | 检测设备名称       |
+  | -n   | 指定设备数量       |
+  | -l   | 指定 RAID 级别     |
+  | -C   | 创建               |
+  | -v   | 显示过程           |
+  | -f   | 模拟设备损坏       |
+  | -r   | 移除设备           |
+  | -Q   | 查看摘要信息       |
+  | -D   | 查看详细信息       |
+  | -S   | 停止 RAID 磁盘阵列 |
+
+  ````bash
+  [root@linuxprobe ~]# mdadm -Cv /dev/md0 -a yes -n 4 -l 10 /dev/sdb /dev/sdc /dev/sdd /dev/sde 
+  mdadm: layout defaults to n2
+  mdadm: layout defaults to n2
+  mdadm: chunk size defaults to 512K
+  mdadm: size set to 20954624K
+  mdadm: Defaulting to version 1.2 metadata
+  mdadm: array /dev/md0 started.
+  # 把制作好的 RAID 磁盘阵列格式化为 ext4 格式
+  [root@linuxprobe ~]# mkfs.ext4 /dev/md0
+  mke2fs 1.42.9 (28-Dec-2013)
+  Filesystem label=
+  OS type: Linux
+  Block size=4096 (log=2) 
+  Fragment size=4096 (log=2)
+  Stride=128 blocks, Stripe width=256 blocks
+  2621440 inodes, 10477312 blocks
+  523865 blocks (5.00%) reserved for the super user
+  First data block=0
+  Maximum filesystem blocks=2157969408
+  320 block groups
+  32768 blocks per group, 32768 fragments per group
+  8192 inodes per group
+  Superblock backups stored on blocks:
+  32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208,
+  4096000, 7962624
+  Allocating group tables: done
+  Writing inode tables: done
+  Creating journal (32768 blocks): done
+  Writing superblocks and filesystem accounting information: done 
+  # 创建挂载点然后把硬盘设备进行挂载操作。挂载成功后可看到可用空间为40GB。
+  [root@linuxprobe ~]# mkdir /RAID
+  [root@linuxprobe ~]# mount /dev/md0 /RAID 
+  [root@linuxprobe ~]# df -h
+  Filesystem Size Used Avail Use% Mounted on
+  /dev/mapper/rhel-root 18G 3.0G 15G 17% /
+  devtmpfs 905M 0 905M 0% /dev
+  tmpfs 914M 84K 914M 1% /dev/shm
+  tmpfs 914M 8.9M 905M 1% /run
+  tmpfs 914M 0 914M 0% /sys/fs/cgroup
+  /dev/sr0 3.5G 3.5G 0 100% /media/cdrom
+  /dev/sda1 497M 119M 379M 24% /boot
+  /dev/md0 40G 49M 38G 1% /RAID 
+  # 查看/dev/md0 磁盘阵列的详细信息，并把挂载信息写入到配置文件中，使其永久生效。
+  [root@linuxprobe ~]# mdadm -D /dev/md0 
+  /dev/md0:
+  Version : 1.2
+  Creation Time : Tue May 5 07:43:26 2017
+  Raid Level : raid10
+  Array Size : 41909248 (39.97 GiB 42.92 GB)
+  Used Dev Size : 20954624 (19.98 GiB 21.46 GB)
+  Raid Devices : 4
+  Total Devices : 4
+  Persistence : Superblock is persistent
+  Update Time : Tue May 5 07:46:59 2017
+  State : clean
+  Active Devices : 4
+  Working Devices : 4
+  Failed Devices : 0
+  Spare Devices : 0
+  Layout : near=2
+  Chunk Size : 512K
+  Name : localhost.localdomain:0 (local to host localhost.localdomain) 
+  UUID : cc9a87d4:1e89e175:5383e1e8:a78ec62c
+  Events : 17
+  Number Major Minor RaidDevice State
+  0 8 16 0 active sync /dev/sdb
+  1 8 32 1 active sync /dev/sdc
+  2 8 48 2 active sync /dev/sdd
+  3 8 64 3 active sync /dev/sde
+  [root@linuxprobe ~]# echo "/dev/md0 /RAID ext4 defaults 0 0" >> /etc/fstab 
+  ````
+
+  
+
+
+
+
