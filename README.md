@@ -1291,3 +1291,211 @@ initial-setup-ks.cfg：文件名称
 - 在配置 TCP Wrappers 服务时需要遵循两个原则：
   - 编写拒绝策略规则时，填写的是服务名称，而非协议名称；
   - 建议先编写拒绝策略规则，再编写允许策略规则，以便直观地看到相应的效果
+
+# 第 9 章 使用 ssh 服务管理远程主机
+
+##  配置网络服务
+
+### 配置网络参数 
+
+- nmtui 命令来配置网络
+
+### 创建网络会话
+
+- RHEL 和 CentOS 系统默认使用 NetworkManager 来提供网络服务，这是一种动态管理网 络配置的守护进程，能够让网络设备保持连接状态。
+- 可以使用 nmcli 命令来管理 Network Manager 服务。
+
+### 绑定两块网卡 
+
+- 借助于网卡绑定技术，不仅 可以提高网络传输速度，更重要的是，还可以确保在其中一块网卡出现故障时，依然可以正 常提供网络服务。
+- 假设我们对两块网卡实施了绑定技术，这样在正常工作中它们会共同传输 数据，使得网络传输的速度变得更快；
+- 而且即使有一块网卡突然出现了故障，另外一块网卡 便会立即自动顶替上去，保证数据传输不会中断。
+
+## 远程控制服务 
+
+### 配置 sshd 服务 
+
+- SSH（Secure Shell）是一种能够以安全的方式提供远程登录的协议，也是目前远程管理 Linux 系统的首选方式。
+
+- sshd 服务配置文件中包含的参数以及作用
+
+  | 参数                              | 作用                                    |
+  | --------------------------------- | --------------------------------------- |
+  | Port 22                           | 默认的 sshd 服务端口                    |
+  | ListenAddress 0.0.0.0             | 设定 sshd 服务器监听的 IP 地址          |
+  | Protocol 2                        | SSH 协议的版本号                        |
+  | HostKey /etc/ssh/ssh_host_key     | SSH 协议版本为 1 时，DES 私钥存放的位置 |
+  | HostKey /etc/ssh/ssh_host_rsa_key | SSH 协议版本为 2 时，RSA 私钥存放的位置 |
+  | HostKey /etc/ssh/ssh_host_dsa_key | SSH 协议版本为 2 时，DSA 私钥存放的位置 |
+  | PermitRootLogin yes               | 设定是否允许 root 管理员直接登录        |
+  | StrictModes yes                   | 当远程用户的私钥改变时直接拒绝连接      |
+  | MaxAuthTries 6                    | 最大密码尝试次数                        |
+  | MaxSessions 10                    | 最大终端数                              |
+  | PasswordAuthentication yes        | 是否允许密码验证                        |
+  | PermitEmptyPasswords no           | 是否允许空密码登录（很不安全）          |
+
+  
+
+### 安全密钥验证
+
+- 加密是对信息进行编码和解码的技术，它通过一定的算法（密钥）将原本可以直接阅读 的明文信息转换成密文形式。
+
+- 密钥即是密文的钥匙，有私钥和公钥之分。在传输数据时，如 果担心被他人监听或截获，就可以在传输前先使用公钥对数据加密处理，然后再行传送。
+
+- 这 样，只有掌握私钥的用户才能解密这段数据，除此之外的其他人即便截获了数据，一般也很 难将其破译为明文信息。
+
+- 在生产环境中使用密码进行口令验证终归存在着被暴力破解或嗅探截获的 风险
+
+- 配置密钥验证方式：
+
+  - 第1步：在客户端主机中生成“密钥对”。
+
+    ```bash
+    [root@linuxprobe ~]# ssh-keygen 
+    Generating public/private rsa key pair.
+    Enter file in which to save the key (/root/.ssh/id_rsa):按回车键或设置密钥的存储路径
+    Created directory '/root/.ssh'.
+    Enter passphrase (empty for no passphrase): 直接按回车键或设置密钥的密码
+    Enter same passphrase again: 再次按回车键或设置密钥的密码
+    Your identification has been saved in /root/.ssh/id_rsa.
+    Your public key has been saved in /root/.ssh/id_rsa.pub.
+    The key fingerprint is:
+    40:32:48:18:e4:ac:c0:c3:c1:ba:7c:6c:3a:a8:b5:22 root@linuxprobe.com
+    The key's randomart image is:
+    +--[ RSA 2048]----+
+    |+*..o . |
+    |*.o + |
+    |o* . |
+    |+ . . |
+    |o.. S |
+    |.. + |
+    |. = |
+    |E+ . |
+    |+.o |
+    +-----------------+ 
+    ```
+
+    
+
+  - 第2步：把客户端主机中生成的公钥文件传送至远程主机
+
+    ```bash
+    [root@linuxprobe ~]# ssh-copy-id 192.168.10.10
+    The authenticity of host '192.168.10.20 (192.168.10.10)' can't be established.
+    ECDSA key fingerprint is 4f:a7:91:9e:8d:6f:b9:48:02:32:61:95:48:ed:1e:3f.
+    Are you sure you want to continue connecting (yes/no)? yes
+    /usr/bin/ssh-copy-id: INFO: attempting to log in with the new key(s), to filter
+    out any that are already installed
+    /usr/bin/ssh-copy-id: INFO: 1 key(s) remain to be installed -- if you are
+    prompted now it is to install the new keys
+    root@192.168.10.10's password:此处输入远程服务器密码
+    Number of key(s) added: 1
+    Now try logging into the machine, with: "ssh '192.168.10.10'"
+    and check to make sure that only the key(s) you wanted were added. 
+    ```
+
+    
+
+  - 第3步：对服务器进行设置，使其只允许密钥验证，拒绝传统的口令验证方式。记得在 修改配置文件后保存并重启 sshd 服务程序。
+
+    ```bash
+    [root@linuxprobe ~]# vim /etc/ssh/sshd_config 
+     ………………省略部分输出信息………………
+     74
+     75 # To disable tunneled clear text passwords, change to no here!
+     76 #PasswordAuthentication yes
+     77 #PermitEmptyPasswords no
+     78 PasswordAuthentication no
+     79
+     ………………省略部分输出信息………………
+    [root@linuxprobe ~]# systemctl restart sshd 
+    ```
+
+    
+
+  - 第4步：在客户端尝试登录到服务器，此时无须输入密码也可成功登录。
+
+    ```bash
+    [root@linuxprobe ~]# ssh 192.168.10.10
+    Last login: Mon Apr 13 19:34:13 2017 
+    ```
+
+    
+
+### 远程传输命令
+
+   - scp（secure copy）是一个基于 SSH 协议在网络之间进行安全传输的命令，其格式为“scp [参数] 本地文件 远程帐户@远程 IP 地址:远程目录”。
+
+   - scp 命令中可用的参数及作用
+
+     | 参数 | 作用                       |
+     | ---- | -------------------------- |
+     | -v   | 显示详细的连接进度         |
+     | -P   | 指定远程主机的 sshd 端口号 |
+     | -r   | 用于传送文件夹             |
+     | -6   | 使用 IPv6 协议             |
+
+- 在使用 scp 命令把文件从本地复制到远程主机时，首先需要以绝对路径的形式写清本地 文件的存放位置。
+
+- 如果要传送整个文件夹内的所有数据，还需要额外添加参数-r 进行递归操 作
+
+- 还可以使用 scp 命令把远程主机上的文件下载到本地主机，其命令格式为“scp [参 数] 远程用户@远程 IP 地址:远程文件 本地目录”。
+
+## 不间断会话服务
+
+- 当与远程主机的会话被关闭 时，在远程主机上运行的命令也随之被中断。
+- screen 是一款能够实现多窗口远程控制的开源服务程序，简单来说就是为了解决网络异 常中断或为了同时控制多个远程终端窗口而设计的程序。
+- 用户还可以使用 screen 服务程序同 时在多个远程会话中自由切换，能够做到实现如下功能:
+  - 会话恢复：即便网络中断，也可让会话随时恢复，确保用户不会失去对远程会话 的控制。
+  - 多窗口：每个会话都是独立运行的，拥有各自独立的输入输出终端窗口，终端窗口内显示 过的信息也将被分开隔离保存，以便下次使用时依然能看到之前的操作记录。
+  - 会话共享：当多个用户同时登录到远程服务器时，便可以使用会话共享功能让用户之 间的输入输出信息共享。
+
+### 管理远程会话 
+
+- screen 命令能做的事情非常多：
+  - 用-S 参数创建会话窗口
+  - 用-d 参数将指定会话进行 离线处理
+  - 用-r 参数回复指定会话
+  - 用-x 参数一次性恢复所有的会话
+  - 用-ls 参数显示当前已 有的会话
+  - 以及用-wipe 参数把目前无法使用的会话删除
+  - ...
+
+### 会话共享功能 
+
+- screen 命令不仅可以确保用户在极端情况下也不丢失对系统的远程控制，保证了生产环 境中远程工作的不间断性，而且它还具有会话共享、分屏切割、会话锁定等实用的功能
+
+- 会话共享功能是一件很酷的事情，当多个用户同时控制主机的时候，它可以把屏幕内容 共享出来，也就是说每个用户都可以看到相同的内容。
+
+- 要实现会话共享功能，首先使用 ssd 服务程序将终端 A 远程连接到服务器，并创建一个 会话窗口。
+
+  ```bash
+  [root@client A ~]# ssh 192.168.10.10
+  The authenticity of host '192.168.10.10 (192.168.10.10)' can't be established.
+  ECDSA key fingerprint is 70:3b:5d:37:96:7b:2e:a5:28:0d:7e:dc:47:6a:fe:5c.
+  Are you sure you want to continue connecting (yes/no)? yes
+  Warning: Permanently added '192.168.10.10' (ECDSA) to the list of known hosts.
+  root@192.168.10.10's password: 此处输入 root 管理员密码
+  Last login: Wed May 4 07:56:29 2017
+  [root@client A ~]# screen -S linuxprobe
+  [root@client A ~]# 
+  ```
+
+  
+
+- 然后，使用 ssh 服务程序将终端 B 远程连接到服务器，并执行获取远程会话的命令。接 下来，两台主机就能看到相同的内容了。
+
+  ```bash
+  [root@client B ~]# ssh 192.168.10.10
+  The authenticity of host '192.168.10.10 (192.168.10.10)' can't be established.
+  ECDSA key fingerprint is 70:3b:5d:37:96:7b:2e:a5:28:0d:7e:dc:47:6a:fe:5c.
+  Are you sure you want to continue connecting (yes/no)? yes
+  Warning: Permanently added '192.168.10.10' (ECDSA) to the list of known hosts.
+  root@192.168.10.10's password: 此处输入 root 管理员密码
+  Last login: Wed Feb 22 04:55:38 2017 from 192.168.10.10
+  [root@client B ~]# screen -x
+  [root@client B ~]
+  ```
+
+  
+
