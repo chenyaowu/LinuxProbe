@@ -1499,3 +1499,98 @@ initial-setup-ks.cfg：文件名称
 
   
 
+# 第 10 章使用 Apache 服务部署静态网站
+
+## 网站服务程序
+
+- 第1步：把光盘设备中的系统镜像挂载到/media/cdrom 目录
+
+  ```bash
+  [root@linuxprobe ~]# mkdir -p /media/cdrom
+  [root@linuxprobe ~]# mount /dev/cdrom /media/cdrom
+  mount: /dev/sr0 is write-protected, mounting read-only 
+  ```
+
+- 第2步：使用 Vim 文本编辑器创建 Yum 仓库的配置文件
+
+  ```bash
+  [root@linuxprobe ~]# vim /etc/yum.repos.d/rhel7.repo
+  [rhel7]
+  name=rhel7
+  baseurl=file:///media/cdrom
+  enabled=1
+  gpgcheck=0 
+  ```
+
+  
+
+- 第3步：动手安装 Apache 服务程序。注意，使用 yum 命令进行安装时，跟在命令后面的 Apache 服务的软件包名称为 httpd。如果直接执行 yum install apache 命令，则系统会报错。
+
+  ```bash
+  [root@linuxprobe ~]# yum install httpd
+  Loaded plugins: langpacks, product-id, subscription-manager
+  ………………省略部分输出信息………………
+  Dependencies Resolved
+  ===============================================================================
+   Package Arch Version Repository Size
+  ===============================================================================
+  Installing:
+   httpd x86_64 2.4.6-17.el7 rhel 1.2 M
+  Installing for dependencies:
+   apr x86_64 1.4.8-3.el7 rhel 103 k
+   apr-util x86_64 1.5.2-6.el7 rhel 92 k
+   httpd-tools x86_64 2.4.6-17.el7 rhel 77 k
+   mailcap noarch 2.1.41-2.el7 rhel 31 k
+  Transaction Summary
+  ===============================================================================
+  Install 1 Package (+4 Dependent packages)
+  Total download size: 1.5 M
+  Installed size: 4.3 M
+  Is this ok [y/d/N]: y
+  Downloading packages:
+  ………………省略部分输出信息………………
+  Complete!
+  ```
+
+  
+
+- 第4步：启用 httpd 服务程序并将其加入到开机启动项中，使其能够随系统开机而运行， 从而持续为用户提供 Web 服务：
+
+  ```bash
+  [root@linuxprobe ~]# systemctl start httpd
+  [root@linuxprobe ~]# systemctl enable httpd
+  ln -s '/usr/lib/systemd/system/httpd.service' '/etc/systemd/system/multi-user.
+  target.wants/httpd.service' 
+  ```
+
+  
+
+## 配置服务文件参数
+
+- Linux 系统中的配置文件
+
+  | 配置文件的名称 | 存放位置                   |
+  | -------------- | -------------------------- |
+  | 服务目录       | /etc/httpd                 |
+  | 主配置文件     | /etc/httpd/conf/httpd.conf |
+  | 网站数据目录   | /var/www/html              |
+  | 访问日志       | /var/log/httpd/access_log  |
+  | 错误日志       | /var/log/httpd/error_log   |
+
+- 在 httpd 服务程序的主配置文件中，存在三种类型的信息：注释行信息、全局配置、区域 配置.
+
+| 参数           | 用途                        |
+| -------------- | --------------------------- |
+| ServerRoot     | 服务目录                    |
+| ServerAdmin    | 管理员邮箱                  |
+| User           | 运行服务的用户              |
+| Group          | 运行服务的用户组            |
+| ServerName     | 网站服务器的域名            |
+| DocumentRoot   | 网站数据目录                |
+| Directory      | 网站数据目录的权限          |
+| Listen         | 监听的 IP 地址与端口号      |
+| DirectoryIndex | 默认的索引页页面            |
+| ErrorLog       | 错误日志文件                |
+| CustomLog      | 访问日志文件                |
+| Timeout        | 网页超时时间，默认为 300 秒 |
+
