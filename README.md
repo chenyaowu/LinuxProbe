@@ -1662,3 +1662,76 @@ initial-setup-ks.cfg：文件名称
 
 ## 第 11 章使用 vsftpd 服务传输文件
 
+## 文件传输协议 
+
+- FTP 是一种在互联网中进行文件传输的协议，基于客户端/服务器模式，默认使用 20、21 号端口，其中端口 20（数据端口）用于进行数据传输，端口 21（命令端口）用于接受客户端 发出的相关 FTP 命令与参数。FTP 服务器普遍部署于内网中，具有容易搭建、方便管理的特 点。
+
+- FTP 协议有下面两种工作 模式
+
+  - 主动模式：FTP 服务器主动向客户端发起连接请求
+  - 被动模式：FTP 服务器等待客户端发起连接请求（FTP 的默认工作模式）
+
+- vsftpd（very secure ftp daemon，非常安全的 FTP 守护进程）是一款运行在 Linux 操作系 统上的 FTP 服务程序，不仅完全开源而且免费，此外，还具有很高的安全性、传输速度，以 及支持虚拟用户验证等其他 FTP 服务程序不具备的特点。
+
+  - 在配置妥当 Yum 软件仓库之后，就可以安装 vsftpd 服务程序了。
+
+    ```bash
+    [root@linuxprobe ~]# yum install vsftpd
+    Loaded plugins: langpacks, product-id, subscription-manager
+    ………………省略部分输出信息………………
+    ===============================================================================
+    Package Arch Version Repository Size
+    ===============================================================================
+    Installing:
+    vsftpd x86_64 3.0.2-9.el7 rhel 166 k
+    Transaction Summary
+    ===============================================================================
+    Install 1 Package
+    Total download size: 166 k
+    Installed size: 343 k
+    Is this ok [y/d/N]: y
+    Downloading packages:
+    Running transaction check
+    Running transaction test
+    Transaction test succeeded
+    Running transaction
+    Installing : vsftpd-3.0.2-9.el7.x86_64 1/1
+    Verifying : vsftpd-3.0.2-9.el7.x86_64 1/1
+    Installed:
+    vsftpd.x86_64 0:3.0.2-9.el7
+    Complete! 
+    ```
+
+  - iptables 防火墙管理工具默认禁止了 FTP 传输协议的端口号，因此在正式配置 vsftpd 服务 程序之前，为了避免这些默认的防火墙策略“捣乱”，还需要清空 iptables 防火墙的默认策略， 并把当前已经被清理的防火墙策略状态保存下来：
+
+    ```bash
+    [root@linuxprobe ~]# iptables -F
+    [root@linuxprobe ~]# service iptables save
+    iptables: Saving firewall rules to /etc/sysconfig/iptables:[ OK ] 
+    ```
+
+  - vsftpd 服务程序常用的参数以及作用
+
+    | 参数                                                   | 作用                                                         |
+    | ------------------------------------------------------ | ------------------------------------------------------------ |
+    | listen=[YES \| NO]                                     | 是否以独立运行的方式监听服务                                 |
+    | listen_address=IP 地址                                 | 设置要监听的 IP 地址                                         |
+    | listen_port=21                                         | 设置 FTP 服务的监听端口                                      |
+    | download_enable＝[YES \| NO]                           | 是否允许下载文件                                             |
+    | userlist_enable=[YES \| NO ] userlist_deny=[YES\| NO ] | 设置用户列表为“允许”还是“禁止”操作                           |
+    | max_clients=0                                          | 最大客户端连接数，0 为不限制                                 |
+    | max_per_ip=0                                           | 同一 IP 地址的最大连接数，0 为不限制                         |
+    | anonymous_enable=[YES \| NO ]                          | 是否允许匿名用户访问                                         |
+    | anon_upload_enable=[YES \| NO ]                        | 是否允许匿名用户上传文件                                     |
+    | anon_umask=022                                         | 匿名用户上传文件的 umask 值                                  |
+    | anon_root=/var/ftp                                     | 匿名用户的 FTP 根目录                                        |
+    | anon_mkdir_write_enable=[YES \| NO ]                   | 是否允许匿名用户创建目录                                     |
+    | anon_other_write_enable=[YES \| NO ]                   | 是否开放匿名用户的其他写入权限（包括重命名、删 除等操作权限） |
+    | anon_max_rate=0                                        | 匿名用户的最大传输速率（字节/秒），0 为不限制                |
+    | local_enable=[YES \| NO]                               | 是否允许本地用户登录 FTP                                     |
+    | local_umask=022                                        | 本地用户上传文件的 umask 值                                  |
+    | local_root=/var/ftp                                    | 本地用户的 FTP 根目录                                        |
+    | chroot_local_user=[YES \| NO ]                         | 是否将用户权限禁锢在 FTP 目录，以确保安全                    |
+    | local_max_rate=0                                       | 本地用户最大传输速率（字节/秒），0 为不限制                  |
+
+    
