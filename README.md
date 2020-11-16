@@ -1834,3 +1834,71 @@ initial-setup-ks.cfg：文件名称
   | quit    | 退出                  |
 
   
+
+# 第12章使用 Samba 或 NFS 实现文件共享 
+
+## Samba 文件共享服务
+
+- Samba 服务程序现在已经成为在 Linux 系统与 Windows 系统之间共享文件的最佳选择。
+
+- Samba 服务程序中的参数以及作用
+
+  | [global]   | 参数                                                         | 作用                                                   |
+  | ---------- | ------------------------------------------------------------ | ------------------------------------------------------ |
+  |            | workgroup = MYGROUP                                          | \#工作组名称                                           |
+  |            | server string = Samba Server Version %v                      | \#服务器介绍信息，参数%v 为显示 SMB 版本号             |
+  |            | log file = /var/log/samba/log.%m                             | \#定义日志文件的存放位置与名称，参数%m 为 来访的主机名 |
+  |            | max log size = 50                                            | \#定义日志文件的最大容量为 50KB                        |
+  |            | security = user                                              | \#安全验证的方式，总共有 4 种                          |
+  |            | \#share：来访主机无需验证口令；比较方便，但安全性很差        |                                                        |
+  |            | \#user：需验证来访主机提供的口令后才可以访问；提升了安全性   |                                                        |
+  |            | \#server：使用独立的远程主机验证来访主机提供的口令（集中管理账户） |                                                        |
+  |            | \#domain：使用域控制器进行身份验证                           |                                                        |
+  |            | passdb backend = tdbsam                                      | \#定义用户后台的类型，共有 3 种                        |
+  |            | \#smbpasswd：使用 smbpasswd 命令为系统用户设置 Samba 服务程序的密码 |                                                        |
+  |            | \#tdbsam：创建数据库文件并使用 pdbedit 命令建立 Samba 服务程序的用户 |                                                        |
+  |            | \#ldapsam：基于 LDAP 服务进行账户验证                        |                                                        |
+  |            | load printers = yes                                          | \#设置在 Samba 服务启动时是否共享打印机设备            |
+  |            | cups options = raw                                           | \#打印机的选项                                         |
+  | [homes]    |                                                              | \#共享参数                                             |
+  |            | comment = Home Directories                                   | \#描述信息                                             |
+  |            | browseable = no                                              | \#指定共享信息是否在“网上邻居”中可见                   |
+  |            | writable = yes                                               | \#定义是否可以执行写入操作，与“read only” 相反         |
+  | [printers] |                                                              | \#打印机共享参数                                       |
+
+
+
+### 配置共享资源 
+
+- 用于设置 Samba 服务程序的参数以及作用
+
+  | 参数                                                  | 作用                       |
+  | ----------------------------------------------------- | -------------------------- |
+  | [database]                                            | 共享名称为 database        |
+  | comment = Do not arbitrarily modify the database file | 警告用户不要随意修改数据库 |
+  | path = /home/database                                 | 共享目录为/home/database   |
+  | public = no                                           | 关闭“所有人可见”           |
+  | writable = yes                                        | 允许写入操作               |
+
+- 第1步：创建用于访问共享资源的账户信息。
+
+  - pdbedit 命令用于管理 SMB 服务程序的账户信息数据库，格式为“pdbedit [选项] 账户”。
+
+  - 用于 pdbedit 命令的参数以及作用
+
+    | 参数      | 作用                   |
+    | --------- | ---------------------- |
+    | -a 用户名 | 建立 Samba 账户        |
+    | -x 用户名 | 删除 Samba 账户        |
+    | -L        | 列出账户列表           |
+    | -Lv       | 列出账户详细信息的列表 |
+
+- 第2步：创建用于共享资源的文件目录。
+
+- 第3步：设置 SELinux 服务与策略，使其允许通过 Samba 服务程序访问普通用户家目录。
+
+- 第4步：在 Samba 服务程序的主配置文件中，根据表式写入共享信息。
+
+- 第5步：Samba 服务程序的配置工作基本完毕。
+
+- 
